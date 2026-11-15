@@ -3,5 +3,5 @@
 Članovi tima:
 
 * Luka Tomašević RA44/2024
-* Aleksandar Djuric RA49/
+* Aleksandar Djuric RA49/2024
 
