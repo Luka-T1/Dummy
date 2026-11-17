@@ -36,5 +36,21 @@ namespace SajamKnjiga.CLI.Views
             }
             posetilac.Status = (Status)Enum.Parse(typeof(Status), status);
         }
+
+        public void PrintPosetioci(List<Posetilac> posetioci)
+        {
+            if (posetioci.Count == 0)
+            {
+                Console.WriteLine("Nema posetilaca.");
+                return;
+            }
+
+            Console.WriteLine("Posetioci:");
+            foreach (Posetilac posetilac in posetioci)
+            {
+                Console.WriteLine(posetilac);
+            }
+        }
+
     }
 }
