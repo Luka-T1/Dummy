@@ -41,5 +41,21 @@ namespace SajamKnjiga.CLI.Views
                 }
             }
         }
+
+        public void PrintKnjige(List<Knjiga> knjige)
+        {
+            if (knjige.Count == 0)
+            {
+                Console.WriteLine("Nema knjiga.");
+                return;
+            }
+
+            Console.WriteLine("Knjige:");
+            foreach (Knjiga knjiga in knjige)
+            {
+                Console.WriteLine(knjiga);
+            }
+        }
+
     }
 }
