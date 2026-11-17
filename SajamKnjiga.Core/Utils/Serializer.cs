@@ -22,5 +22,26 @@ namespace SajamKnjiga.Core.Utils
 
             return csv.ToString();
         }
+        
+        public List<T> FromCSV(IEnumerable<string> lines)
+        {
+            List<T> objects = new List<T>();
+
+            foreach (string line in lines)
+            {
+                // prazne linije na kraju fajla preskacemo
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                string[] values = line.Split(Delimiter);
+                T obj = new T();
+                obj.FromCSV(values);
+                objects.Add(obj);
+            }
+
+            return objects;
+        }
     }
 }
