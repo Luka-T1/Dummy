@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 
 namespace SajamKnjiga.CLI.Views
 {
@@ -27,5 +28,29 @@ namespace SajamKnjiga.CLI.Views
             }
             return broj;
         }
+
+        public static double SafeInputDouble(string poruka)
+        {
+            Console.Write(poruka);
+            double broj;
+            // dozvoljavamo i tacku i zarez
+            while (!double.TryParse(Console.ReadLine()?.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out broj))
+            {
+                Console.Write("Unesite broj (npr. 1200.50): ");
+            }
+            return broj;
+        }
+
+        public static DateTime SafeInputDate(string poruka)
+        {
+            Console.Write(poruka);
+            DateTime datum;
+            while (!DateTime.TryParseExact(Console.ReadLine(), "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out datum))
+            {
+                Console.Write("Datum mora biti u formatu dd.MM.yyyy (npr. 05.03.2001): ");
+            }
+            return datum;
+        }
+
     }
 }
