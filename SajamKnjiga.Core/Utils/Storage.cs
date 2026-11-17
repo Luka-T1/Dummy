@@ -20,5 +20,26 @@ namespace SajamKnjiga.Core.Utils
             _filePath = Path.Combine(folder, fileName);
             _serializer = new Serializer<T>();
         }
+
+        public List<T> Load()
+        {
+            if (!File.Exists(_filePath))
+            {
+                FileStream fs = File.Create(_filePath);
+                fs.Close();
+            }
+
+            IEnumerable<string> lines = File.ReadLines(_filePath);
+            return _serializer.FromCSV(lines);
+        }
+
+        public void Save(List<T> objects)
+        {
+            string csv = _serializer.ToCSV(objects);
+            using (StreamWriter writer = new StreamWriter(_filePath))
+            {
+                writer.Write(csv);
+            }
+        }
     }
 }
