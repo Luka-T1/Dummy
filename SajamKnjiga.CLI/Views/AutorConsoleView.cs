@@ -28,5 +28,21 @@ namespace SajamKnjiga.CLI.Views
             autor.Email = ConsoleViewUtils.SafeInputText("Email: ");
             autor.GodineIskustva = ConsoleViewUtils.SafeInputInt("Godine iskustva: ");
         }
+
+        public void PrintAutori(List<Autor> autori)
+        {
+            if (autori.Count == 0)
+            {
+                Console.WriteLine("Nema autora.");
+                return;
+            }
+
+            Console.WriteLine("Autori:");
+            foreach (Autor autor in autori)
+            {
+                Console.WriteLine(autor);
+            }
+        }
+
     }
 }
