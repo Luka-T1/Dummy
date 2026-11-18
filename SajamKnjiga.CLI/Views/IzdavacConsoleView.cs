@@ -37,6 +37,8 @@ namespace SajamKnjiga.CLI.Views
             Console.WriteLine("--- IZDAVACI ---");
             Console.WriteLine("1: Prikaz svih izdavaca");
             Console.WriteLine("2: Dodavanje izdavaca");
+            Console.WriteLine("3: Izmena izdavaca");
+            Console.WriteLine("4: Brisanje izdavaca");
             Console.WriteLine("0: Nazad");
             Console.Write(">> ");
         }
@@ -50,6 +52,12 @@ namespace SajamKnjiga.CLI.Views
                     break;
                 case "2":
                     DodajIzdavaca();
+                    break;
+                case "3":
+                    IzmeniIzdavaca();
+                    break;
+                case "4":
+                    ObrisiIzdavaca();
                     break;
                 default:
                     Console.WriteLine("Nepostojeca opcija.");
@@ -88,6 +96,39 @@ namespace SajamKnjiga.CLI.Views
                 sef = null;
             }
             izdavac.SefIzdavaca = sef;
+        }
+
+        private void IzmeniIzdavaca()
+        {
+            string sifra = ConsoleViewUtils.SafeInputText("Sifra izdavaca za izmenu: ");
+            Izdavac stari = _izdavacDao.GetIzdavacBySifra(sifra);
+            if (stari == null)
+            {
+                Console.WriteLine("Ne postoji izdavac sa tom sifrom.");
+                return;
+            }
+
+            Console.WriteLine("Trenutni podaci: " + stari);
+            Console.WriteLine("Unesite nove podatke:");
+            Izdavac novi = new Izdavac();
+            novi.Sifra = sifra;
+            UnesiPodatke(novi);
+            PostaviSefa(novi);
+
+            _izdavacDao.UpdateIzdavac(novi);
+            Console.WriteLine("Izdavac je izmenjen.");
+        }
+
+         private void ObrisiIzdavaca()
+        {
+            string sifra = ConsoleViewUtils.SafeInputText("Sifra izdavaca za brisanje: ");
+            Izdavac obrisan = _izdavacDao.RemoveIzdavac(sifra);
+            if (obrisan == null)
+            {
+                Console.WriteLine("Ne postoji izdavac sa tom sifrom.");
+                return;
+            }
+            Console.WriteLine("Obrisan izdavac: " + obrisan.Naziv);
         }
 
         public Izdavac InputIzdavac()
