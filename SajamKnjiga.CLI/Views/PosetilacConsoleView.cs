@@ -1,12 +1,72 @@
 using System;
 using System.Collections.Generic;
+using SajamKnjiga.Core.DAO;
 using SajamKnjiga.Core.Models;
+
 
 namespace SajamKnjiga.CLI.Views
 {
     // Po uzoru na VehicleConsoleView iz CRUDExample (vezbe 3)
     public class PosetilacConsoleView
     {
+         private readonly PosetilacDAO _posetilacDao;
+
+        public PosetilacConsoleView(PosetilacDAO posetilacDao)
+        {
+            _posetilacDao = posetilacDao;
+        }
+
+        public void RunMenu()
+        {
+            while (true)
+            {
+                ShowMenu();
+                string unos = Console.ReadLine() ?? "0";
+                if (unos == "0")
+                {
+                    break;
+                }
+                HandleMenuInput(unos);
+            }
+        }
+
+        private void ShowMenu()
+        {
+            Console.WriteLine();
+            Console.WriteLine("--- POSETIOCI ---");
+            Console.WriteLine("1: Prikaz svih posetilaca");
+            Console.WriteLine("2: Dodavanje posetioca");
+            Console.WriteLine("0: Nazad");
+            Console.Write(">> ");
+        }
+
+        private void HandleMenuInput(string unos)
+        {
+            switch (unos)
+            {
+                case "1":
+                    PrintPosetioci(_posetilacDao.GetAllPosetioci());
+                    break;
+                case "2":
+                    DodajPosetioca();
+                    break;
+                default:
+                    Console.WriteLine("Nepostojeca opcija.");
+                    break;
+            }
+        }
+
+        private void DodajPosetioca()
+        {
+            Posetilac posetilac = InputPosetilac();
+            if (_posetilacDao.AddPosetilac(posetilac) == null)
+            {
+                Console.WriteLine("Posetilac sa tom clanskom kartom vec postoji.");
+                return;
+            }
+            Console.WriteLine("Posetilac je dodat.");
+        }
+
         public Posetilac InputPosetilac()
         {
             Posetilac posetilac = new Posetilac();
