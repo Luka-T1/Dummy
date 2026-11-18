@@ -26,5 +26,18 @@ namespace SajamKnjiga.Core.DAO
         {
             return _posetioci.Find(x => x.BrojClanskeKarte == brojKarte);
         }
+
+         public Posetilac AddPosetilac(Posetilac posetilac)
+        {
+            // isti kljuc ne sme da postoji dva puta
+            if (GetPosetilacByBrojClanskeKarte(posetilac.BrojClanskeKarte) != null)
+            {
+                return null;
+            }
+
+            _posetioci.Add(posetilac);
+            _storage.Save(_posetioci);
+            return posetilac;
+        }
     }
 }
