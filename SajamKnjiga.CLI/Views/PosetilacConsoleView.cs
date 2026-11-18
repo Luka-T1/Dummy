@@ -37,6 +37,7 @@ namespace SajamKnjiga.CLI.Views
             Console.WriteLine("1: Prikaz svih posetilaca");
             Console.WriteLine("2: Dodavanje posetioca");
             Console.WriteLine("3: Izmena posetioca");
+            Console.WriteLine("4: Brisanje posetioca");
             Console.WriteLine("0: Nazad");
             Console.Write(">> ");
         }
@@ -53,6 +54,9 @@ namespace SajamKnjiga.CLI.Views
                     break;
                 case "3":
                     IzmeniPosetioca();
+                    break;
+                case "4":
+                    ObrisiPosetioca();
                     break;
                 default:
                     Console.WriteLine("Nepostojeca opcija.");
@@ -89,6 +93,18 @@ namespace SajamKnjiga.CLI.Views
 
             _posetilacDao.UpdatePosetilac(novi);
             Console.WriteLine("Posetilac je izmenjen.");
+        }
+
+         private void ObrisiPosetioca()
+        {
+            string brojKarte = ConsoleViewUtils.SafeInputText("Broj clanske karte posetioca za brisanje: ");
+            Posetilac obrisan = _posetilacDao.RemovePosetilac(brojKarte);
+            if (obrisan == null)
+            {
+                Console.WriteLine("Ne postoji posetilac sa tom clanskom kartom.");
+                return;
+            }
+            Console.WriteLine("Obrisan posetilac: " + obrisan.Ime + " " + obrisan.Prezime);
         }
 
         public Posetilac InputPosetilac()
