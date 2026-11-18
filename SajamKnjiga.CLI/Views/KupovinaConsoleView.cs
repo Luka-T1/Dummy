@@ -39,6 +39,8 @@ namespace SajamKnjiga.CLI.Views
             Console.WriteLine("--- KUPOVINE ---");
             Console.WriteLine("1: Prikaz svih kupovina");
             Console.WriteLine("2: Dodavanje kupovine");
+            Console.WriteLine("3: Izmena kupovine");
+            Console.WriteLine("4: Brisanje kupovine");
             Console.WriteLine("0: Nazad");
             Console.Write(">> ");
         }
@@ -52,6 +54,12 @@ namespace SajamKnjiga.CLI.Views
                     break;
                 case "2":
                     DodajKupovinu();
+                    break;
+                case "3":
+                    IzmeniKupovinu();
+                    break;
+                case "4":
+                    ObrisiKupovinu();
                     break;
                 default:
                     Console.WriteLine("Nepostojeca opcija.");
@@ -79,6 +87,40 @@ namespace SajamKnjiga.CLI.Views
                 return;
             }
             Console.WriteLine("Kupovina je dodata.");
+        }
+
+         private void IzmeniKupovinu()
+        {
+            string brojKarte = ConsoleViewUtils.SafeInputText("Broj clanske karte posetioca: ");
+            string isbn = ConsoleViewUtils.SafeInputText("ISBN knjige: ");
+            Kupovina stara = _kupovinaDao.GetKupovina(brojKarte, isbn);
+            if (stara == null)
+            {
+                Console.WriteLine("Ta kupovina ne postoji.");
+                return;
+            }
+
+            Console.WriteLine("Trenutni podaci: " + stara);
+            Console.WriteLine("Unesite nove podatke:");
+            Kupovina nova = new Kupovina();
+            nova.Posetilac = stara.Posetilac;
+            nova.Knjiga = stara.Knjiga;
+            UnesiPodatke(nova);
+
+            _kupovinaDao.UpdateKupovina(nova);
+            Console.WriteLine("Kupovina je izmenjena.");
+        }
+
+        private void ObrisiKupovinu()
+        {
+            string brojKarte = ConsoleViewUtils.SafeInputText("Broj clanske karte posetioca: ");
+            string isbn = ConsoleViewUtils.SafeInputText("ISBN knjige: ");
+            if (_kupovinaDao.RemoveKupovina(brojKarte, isbn) == null)
+            {
+                Console.WriteLine("Ta kupovina ne postoji.");
+                return;
+            }
+            Console.WriteLine("Kupovina je obrisana.");
         }
 
         public Kupovina InputKupovina()
