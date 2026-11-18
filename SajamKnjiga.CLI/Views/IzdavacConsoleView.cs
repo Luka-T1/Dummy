@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SajamKnjiga.Core.DAO;
 using SajamKnjiga.Core.Models;
 
 namespace SajamKnjiga.CLI.Views
@@ -7,6 +8,129 @@ namespace SajamKnjiga.CLI.Views
     // Po uzoru na VehicleConsoleView iz CRUDExample (vezbe 3)
     public class IzdavacConsoleView
     {
+        private readonly IzdavacDAO _izdavacDao;
+        private readonly AutorDAO _autorDao;
+
+        public IzdavacConsoleView(IzdavacDAO izdavacDao, AutorDAO autorDao)
+        {
+            _izdavacDao = izdavacDao;
+            _autorDao = autorDao;
+        }
+
+        public void RunMenu()
+        {
+            while (true)
+            {
+                ShowMenu();
+                string unos = Console.ReadLine() ?? "0";
+                if (unos == "0")
+                {
+                    break;
+                }
+                HandleMenuInput(unos);
+            }
+        }
+
+        private void ShowMenu()
+        {
+            Console.WriteLine();
+            Console.WriteLine("--- IZDAVACI ---");
+            Console.WriteLine("1: Prikaz svih izdavaca");
+            Console.WriteLine("2: Dodavanje izdavaca");
+            Console.WriteLine("3: Izmena izdavaca");
+            Console.WriteLine("4: Brisanje izdavaca");
+            Console.WriteLine("0: Nazad");
+            Console.Write(">> ");
+        }
+
+        private void HandleMenuInput(string unos)
+        {
+            switch (unos)
+            {
+                case "1":
+                    PrintIzdavaci(_izdavacDao.GetAllIzdavaci());
+                    break;
+                case "2":
+                    DodajIzdavaca();
+                    break;
+                case "3":
+                    IzmeniIzdavaca();
+                    break;
+                case "4":
+                    ObrisiIzdavaca();
+                    break;
+                default:
+                    Console.WriteLine("Nepostojeca opcija.");
+                    break;
+            }
+        }
+
+        private void DodajIzdavaca()
+        {
+            Izdavac izdavac = InputIzdavac();
+            PostaviSefa(izdavac);
+            if (_izdavacDao.AddIzdavac(izdavac) == null)
+            {
+                Console.WriteLine("Izdavac sa tom sifrom vec postoji.");
+                return;
+            }
+            Console.WriteLine("Izdavac je dodat.");
+        }
+
+        // sef mora biti postojeci autor sa bar 5 godina iskustva
+        private void PostaviSefa(Izdavac izdavac)
+        {
+            if (izdavac.SefIzdavaca == null)
+            {
+                return;
+            }
+
+            Autor sef = _autorDao.GetAutorByBrojLicneKarte(izdavac.SefIzdavaca.BrojLicneKarte);
+            if (sef == null)
+            {
+                Console.WriteLine("Autor ne postoji, izdavac ostaje bez sefa.");
+            }
+            else if (sef.GodineIskustva < 5)
+            {
+                Console.WriteLine("Autor ima manje od 5 godina iskustva i ne moze biti sef.");
+                sef = null;
+            }
+            izdavac.SefIzdavaca = sef;
+        }
+
+        private void IzmeniIzdavaca()
+        {
+            string sifra = ConsoleViewUtils.SafeInputText("Sifra izdavaca za izmenu: ");
+            Izdavac stari = _izdavacDao.GetIzdavacBySifra(sifra);
+            if (stari == null)
+            {
+                Console.WriteLine("Ne postoji izdavac sa tom sifrom.");
+                return;
+            }
+
+            Console.WriteLine("Trenutni podaci: " + stari);
+            Console.WriteLine("Unesite nove podatke:");
+            Izdavac novi = new Izdavac();
+            novi.Sifra = sifra;
+            UnesiPodatke(novi);
+            PostaviSefa(novi);
+
+            _izdavacDao.UpdateIzdavac(novi);
+            Console.WriteLine("Izdavac je izmenjen.");
+        }
+
+         private void ObrisiIzdavaca()
+        {
+            string sifra = ConsoleViewUtils.SafeInputText("Sifra izdavaca za brisanje: ");
+            Izdavac obrisan = _izdavacDao.RemoveIzdavac(sifra);
+            if (obrisan == null)
+            {
+                Console.WriteLine("Ne postoji izdavac sa tom sifrom.");
+                return;
+            }
+            Console.WriteLine("Obrisan izdavac: " + obrisan.Naziv);
+        }
+
         public Izdavac InputIzdavac()
         {
             Izdavac izdavac = new Izdavac();
