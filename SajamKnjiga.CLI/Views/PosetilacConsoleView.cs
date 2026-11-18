@@ -1,12 +1,112 @@
 using System;
 using System.Collections.Generic;
+using SajamKnjiga.Core.DAO;
 using SajamKnjiga.Core.Models;
+
 
 namespace SajamKnjiga.CLI.Views
 {
     // Po uzoru na VehicleConsoleView iz CRUDExample (vezbe 3)
     public class PosetilacConsoleView
     {
+         private readonly PosetilacDAO _posetilacDao;
+
+        public PosetilacConsoleView(PosetilacDAO posetilacDao)
+        {
+            _posetilacDao = posetilacDao;
+        }
+
+        public void RunMenu()
+        {
+            while (true)
+            {
+                ShowMenu();
+                string unos = Console.ReadLine() ?? "0";
+                if (unos == "0")
+                {
+                    break;
+                }
+                HandleMenuInput(unos);
+            }
+        }
+
+        private void ShowMenu()
+        {
+            Console.WriteLine();
+            Console.WriteLine("--- POSETIOCI ---");
+            Console.WriteLine("1: Prikaz svih posetilaca");
+            Console.WriteLine("2: Dodavanje posetioca");
+            Console.WriteLine("3: Izmena posetioca");
+            Console.WriteLine("4: Brisanje posetioca");
+            Console.WriteLine("0: Nazad");
+            Console.Write(">> ");
+        }
+
+        private void HandleMenuInput(string unos)
+        {
+            switch (unos)
+            {
+                case "1":
+                    PrintPosetioci(_posetilacDao.GetAllPosetioci());
+                    break;
+                case "2":
+                    DodajPosetioca();
+                    break;
+                case "3":
+                    IzmeniPosetioca();
+                    break;
+                case "4":
+                    ObrisiPosetioca();
+                    break;
+                default:
+                    Console.WriteLine("Nepostojeca opcija.");
+                    break;
+            }
+        }
+
+        private void DodajPosetioca()
+        {
+            Posetilac posetilac = InputPosetilac();
+            if (_posetilacDao.AddPosetilac(posetilac) == null)
+            {
+                Console.WriteLine("Posetilac sa tom clanskom kartom vec postoji.");
+                return;
+            }
+            Console.WriteLine("Posetilac je dodat.");
+        }
+
+         private void IzmeniPosetioca()
+        {
+            string brojKarte = ConsoleViewUtils.SafeInputText("Broj clanske karte posetioca za izmenu: ");
+            Posetilac stari = _posetilacDao.GetPosetilacByBrojClanskeKarte(brojKarte);
+            if (stari == null)
+            {
+                Console.WriteLine("Ne postoji posetilac sa tom clanskom kartom.");
+                return;
+            }
+
+            Console.WriteLine("Trenutni podaci: " + stari);
+            Console.WriteLine("Unesite nove podatke:");
+            Posetilac novi = new Posetilac();
+            novi.BrojClanskeKarte = brojKarte;
+            UnesiPodatke(novi);
+
+            _posetilacDao.UpdatePosetilac(novi);
+            Console.WriteLine("Posetilac je izmenjen.");
+        }
+
+         private void ObrisiPosetioca()
+        {
+            string brojKarte = ConsoleViewUtils.SafeInputText("Broj clanske karte posetioca za brisanje: ");
+            Posetilac obrisan = _posetilacDao.RemovePosetilac(brojKarte);
+            if (obrisan == null)
+            {
+                Console.WriteLine("Ne postoji posetilac sa tom clanskom kartom.");
+                return;
+            }
+            Console.WriteLine("Obrisan posetilac: " + obrisan.Ime + " " + obrisan.Prezime);
+        }
+
         public Posetilac InputPosetilac()
         {
             Posetilac posetilac = new Posetilac();
