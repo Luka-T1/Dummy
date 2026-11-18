@@ -39,5 +39,38 @@ namespace SajamKnjiga.Core.DAO
             _storage.Save(_posetioci);
             return posetilac;
         }
+
+        public Posetilac UpdatePosetilac(Posetilac posetilac)
+        {
+            Posetilac stari = GetPosetilacByBrojClanskeKarte(posetilac.BrojClanskeKarte);
+            if (stari == null)
+            {
+                return null;
+            }
+
+            stari.Ime = posetilac.Ime;
+            stari.Prezime = posetilac.Prezime;
+            stari.DatumRodjenja = posetilac.DatumRodjenja;
+            stari.Adresa = posetilac.Adresa;
+            stari.KontaktTelefon = posetilac.KontaktTelefon;
+            stari.Email = posetilac.Email;
+            stari.TrenutnaGodinaClanstva = posetilac.TrenutnaGodinaClanstva;
+            stari.Status = posetilac.Status;
+            _storage.Save(_posetioci);
+            return stari;
+        }
+
+        public Posetilac RemovePosetilac(string brojKarte)
+        {
+            Posetilac posetilac = GetPosetilacByBrojClanskeKarte(brojKarte);
+            if (posetilac == null)
+            {
+                return null;
+            }
+
+            _posetioci.Remove(posetilac);
+            _storage.Save(_posetioci);
+            return posetilac;
+        }
     }
 }
