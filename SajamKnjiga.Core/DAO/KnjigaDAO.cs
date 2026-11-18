@@ -26,5 +26,50 @@ namespace SajamKnjiga.Core.DAO
         {
             return _knjige.Find(x => x.ISBN == isbn);
         }
+
+        public Knjiga AddKnjiga(Knjiga knjiga)
+        {
+            // isti kljuc ne sme da postoji dva puta
+            if (GetKnjigaByISBN(knjiga.ISBN) != null)
+            {
+                return null;
+            }
+
+            _knjige.Add(knjiga);
+            _storage.Save(_knjige);
+            return knjiga;
+        }
+
+        public Knjiga UpdateKnjiga(Knjiga knjiga)
+        {
+            Knjiga stara = GetKnjigaByISBN(knjiga.ISBN);
+            if (stara == null)
+            {
+                return null;
+            }
+
+            stara.Naziv = knjiga.Naziv;
+            stara.Zanr = knjiga.Zanr;
+            stara.GodinaIzdanja = knjiga.GodinaIzdanja;
+            stara.Cena = knjiga.Cena;
+            stara.BrojStrana = knjiga.BrojStrana;
+            stara.Autori = knjiga.Autori;
+            stara.Izdavac = knjiga.Izdavac;
+            _storage.Save(_knjige);
+            return stara;
+        }
+
+        public Knjiga RemoveKnjiga(string isbn)
+        {
+            Knjiga knjiga = GetKnjigaByISBN(isbn);
+            if (knjiga == null)
+            {
+                return null;
+            }
+
+            _knjige.Remove(knjiga);
+            _storage.Save(_knjige);
+            return knjiga;
+        }
     }
 }
