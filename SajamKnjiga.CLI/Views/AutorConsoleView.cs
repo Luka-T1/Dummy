@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SajamKnjiga.Core.DAO;
 using SajamKnjiga.Core.Models;
 
 namespace SajamKnjiga.CLI.Views
@@ -7,6 +8,64 @@ namespace SajamKnjiga.CLI.Views
     // Po uzoru na VehicleConsoleView iz CRUDExample (vezbe 3)
     public class AutorConsoleView
     {
+         private readonly AutorDAO _autorDao;
+
+        public AutorConsoleView(AutorDAO autorDao)
+        {
+            _autorDao = autorDao;
+        }
+
+        public void RunMenu()
+        {
+            while (true)
+            {
+                ShowMenu();
+                string unos = Console.ReadLine() ?? "0";
+                if (unos == "0")
+                {
+                    break;
+                }
+                HandleMenuInput(unos);
+            }
+        }
+
+        private void ShowMenu()
+        {
+            Console.WriteLine();
+            Console.WriteLine("--- AUTORI ---");
+            Console.WriteLine("1: Prikaz svih autora");
+            Console.WriteLine("2: Dodavanje autora");
+            Console.WriteLine("0: Nazad");
+            Console.Write(">> ");
+        }
+
+        private void HandleMenuInput(string unos)
+        {
+            switch (unos)
+            {
+                case "1":
+                    PrintAutori(_autorDao.GetAllAutori());
+                    break;
+                case "2":
+                    DodajAutora();
+                    break;
+                default:
+                    Console.WriteLine("Nepostojeca opcija.");
+                    break;
+            }
+        }
+
+        private void DodajAutora()
+        {
+            Autor autor = InputAutor();
+            if (_autorDao.AddAutor(autor) == null)
+            {
+                Console.WriteLine("Autor sa tim brojem licne karte vec postoji.");
+                return;
+            }
+            Console.WriteLine("Autor je dodat.");
+        }
+
         public Autor InputAutor()
         {
             Autor autor = new Autor();
