@@ -26,5 +26,50 @@ namespace SajamKnjiga.Core.DAO
         {
             return _autori.Find(x => x.BrojLicneKarte == brojLicneKarte);
         }
+
+        public Autor AddAutor(Autor autor)
+        {
+            // isti kljuc ne sme da postoji dva puta
+            if (GetAutorByBrojLicneKarte(autor.BrojLicneKarte) != null)
+            {
+                return null;
+            }
+
+            _autori.Add(autor);
+            _storage.Save(_autori);
+            return autor;
+        }
+
+        public Autor UpdateAutor(Autor autor)
+        {
+            Autor stari = GetAutorByBrojLicneKarte(autor.BrojLicneKarte);
+            if (stari == null)
+            {
+                return null;
+            }
+
+            stari.Ime = autor.Ime;
+            stari.Prezime = autor.Prezime;
+            stari.DatumRodjenja = autor.DatumRodjenja;
+            stari.Adresa = autor.Adresa;
+            stari.Telefon = autor.Telefon;
+            stari.Email = autor.Email;
+            stari.GodineIskustva = autor.GodineIskustva;
+            _storage.Save(_autori);
+            return stari;
+        }
+
+        public Autor RemoveAutor(string brojLicneKarte)
+        {
+            Autor autor = GetAutorByBrojLicneKarte(brojLicneKarte);
+            if (autor == null)
+            {
+                return null;
+            }
+
+            _autori.Remove(autor);
+            _storage.Save(_autori);
+            return autor;
+        }
     }
 }
