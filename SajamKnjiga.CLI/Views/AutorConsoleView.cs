@@ -35,6 +35,8 @@ namespace SajamKnjiga.CLI.Views
             Console.WriteLine("--- AUTORI ---");
             Console.WriteLine("1: Prikaz svih autora");
             Console.WriteLine("2: Dodavanje autora");
+            Console.WriteLine("3: Izmena autora");
+            Console.WriteLine("4: Brisanje autora");
             Console.WriteLine("0: Nazad");
             Console.Write(">> ");
         }
@@ -48,6 +50,12 @@ namespace SajamKnjiga.CLI.Views
                     break;
                 case "2":
                     DodajAutora();
+                    break;
+                case "3":
+                    IzmeniAutora();
+                    break;
+                case "4":
+                    ObrisiAutora();
                     break;
                 default:
                     Console.WriteLine("Nepostojeca opcija.");
@@ -64,6 +72,38 @@ namespace SajamKnjiga.CLI.Views
                 return;
             }
             Console.WriteLine("Autor je dodat.");
+        }
+
+        private void IzmeniAutora()
+        {
+            string brojLk = ConsoleViewUtils.SafeInputText("Broj licne karte autora za izmenu: ");
+            Autor stari = _autorDao.GetAutorByBrojLicneKarte(brojLk);
+            if (stari == null)
+            {
+                Console.WriteLine("Ne postoji autor sa tim brojem licne karte.");
+                return;
+            }
+
+            Console.WriteLine("Trenutni podaci: " + stari);
+            Console.WriteLine("Unesite nove podatke:");
+            Autor novi = new Autor();
+            novi.BrojLicneKarte = brojLk;
+            UnesiPodatke(novi);
+
+            _autorDao.UpdateAutor(novi);
+            Console.WriteLine("Autor je izmenjen.");
+        }
+
+        private void ObrisiAutora()
+        {
+            string brojLk = ConsoleViewUtils.SafeInputText("Broj licne karte autora za brisanje: ");
+            Autor obrisan = _autorDao.RemoveAutor(brojLk);
+            if (obrisan == null)
+            {
+                Console.WriteLine("Ne postoji autor sa tim brojem licne karte.");
+                return;
+            }
+            Console.WriteLine("Obrisan autor: " + obrisan.Ime + " " + obrisan.Prezime);
         }
 
         public Autor InputAutor()
