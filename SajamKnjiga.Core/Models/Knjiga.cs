@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using SajamKnjiga.Core.Interfaces;
 
 namespace SajamKnjiga.Core.Models
 {
-    public class Knjiga
+    public class Knjiga : ISerializable
     {
         public string ISBN { get; set; }
         public string Naziv { get; set; }
@@ -30,6 +32,57 @@ namespace SajamKnjiga.Core.Models
             PosetiociZelja = new List<Posetilac>();
         }
 
+        public string[] ToCSV()
+        {
+            // u fajl se cuvaju samo kljucevi izdavaca i autora, ne ceo objekat
+            string sifraIzdavaca = Izdavac == null ? "" : Izdavac.Sifra;
+            List<string> licneKarte = new List<string>();
+            foreach (Autor autor in Autori)
+            {
+                licneKarte.Add(autor.BrojLicneKarte);
+            }
+
+            string[] csvValues =
+            {
+                ISBN,
+                Naziv,
+                Zanr,
+                GodinaIzdanja.ToString(),
+                Cena.ToString(CultureInfo.InvariantCulture),
+                BrojStrana.ToString(),
+                sifraIzdavaca,
+                string.Join(",", licneKarte)
+            };
+            return csvValues;
+        }
+
+        public void FromCSV(string[] values)
+        {
+            ISBN = values[0];
+            Naziv = values[1];
+            Zanr = values[2];
+            GodinaIzdanja = int.Parse(values[3]);
+            Cena = double.Parse(values[4], CultureInfo.InvariantCulture);
+            BrojStrana = int.Parse(values[5]);
+
+            // ovde pravimo "prazne" objekte samo sa kljucem, pravi objekti se povezu posle ucitavanja
+            if (values[6] != "")
+            {
+                Izdavac = new Izdavac();
+                Izdavac.Sifra = values[6];
+            }
+
+            Autori = new List<Autor>();
+            foreach (string lk in values[7].Split(','))
+            {
+                if (lk != "")
+                {
+                    Autor autor = new Autor();
+                    autor.BrojLicneKarte = lk;
+                    Autori.Add(autor);
+                }
+            }
+        }
         public override string ToString()
         {
             string izdavac = Izdavac == null ? "-" : Izdavac.Naziv;

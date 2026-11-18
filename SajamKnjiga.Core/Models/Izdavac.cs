@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
+using SajamKnjiga.Core.Interfaces;
 
 namespace SajamKnjiga.Core.Models
 {
-    public class Izdavac
+    public class Izdavac : ISerializable
     {
         public string Sifra { get; set; }
         public string Naziv { get; set; }
@@ -26,6 +27,23 @@ namespace SajamKnjiga.Core.Models
             Naziv = naziv;
         }
 
+        public string[] ToCSV()
+        {
+            string sef = SefIzdavaca == null ? "" : SefIzdavaca.BrojLicneKarte;
+            string[] csvValues = { Sifra, Naziv, sef };
+            return csvValues;
+        }
+
+        public void FromCSV(string[] values)
+        {
+            Sifra = values[0];
+            Naziv = values[1];
+            if (values[2] != "")
+            {
+                SefIzdavaca = new Autor();
+                SefIzdavaca.BrojLicneKarte = values[2];
+            }
+        }
         public override string ToString()
         {
             string sef = SefIzdavaca == null ? "-" : $"{SefIzdavaca.Prezime} {SefIzdavaca.Ime}";
