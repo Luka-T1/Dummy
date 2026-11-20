@@ -13,7 +13,7 @@ namespace SajamKnjiga.Core.DAO
 
         public AutorDAO()
         {
-            _storage = new Storage<Autor>("autori.txt");
+            _storage = new Storage<Autor>("autori.csv");
             _autori = _storage.Load();
         }
 
