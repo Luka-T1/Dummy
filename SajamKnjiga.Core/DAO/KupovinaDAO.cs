@@ -14,7 +14,7 @@ namespace SajamKnjiga.Core.DAO
 
         public KupovinaDAO()
         {
-            _storage = new Storage<Kupovina>("kupovine.txt");
+            _storage = new Storage<Kupovina>("kupovine.csv");
             _kupovine = _storage.Load();
         }
 
