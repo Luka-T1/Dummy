@@ -1,3 +1,0 @@
-Ivo|Andric|09.10.1892|Knez Mihailova|12|Beograd|Srbija|0641234567|ivo.andric@mail.com|1234567|30
-Desanka|Maksimovic|16.05.1898|Bulevar oslobodjenja|5|Novi Sad|Srbija|0652345678|desanka@mail.com|2345678|25
-Marko|Petrovic|21.03.1990|Zmaj Jovina|7|Novi Sad|Srbija|0633456789|marko.p@mail.com|3456789|3
