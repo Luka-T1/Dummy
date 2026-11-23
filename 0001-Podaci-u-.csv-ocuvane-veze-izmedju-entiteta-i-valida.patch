@@ -1,0 +1,383 @@
+From 6af8492e39cc3ecbab81f8111ddc48ea06a48ea6 Mon Sep 17 00:00:00 2001
+From: Luka-T1 <luka.tomasevic2006@gmail.com>
+Date: Fri, 20 Nov 2026 12:14:28 +0000
+Subject: [PATCH] Podaci u .csv, ocuvane veze izmedju entiteta i validacija
+ unosa
+
+- Data/*.txt preimenovani u .csv (DAO-i vec citaju .csv), README azuriran
+- KnjigaDAO: dodavanje/izmena/brisanje knjige azurira autor.Knjige,
+  izdavac.Knjige i izdavac.Autori
+- brisanje je odbijeno ako bi ostavilo visece reference
+  (knjiga/posetilac sa kupovinama, autor sa knjigama ili kao sef,
+  izdavac sa knjigama)
+- znak '|' nije dozvoljen u unosu, zarez nije dozvoljen u licnoj karti
+- ProsecnaOcenaRecenzija se racuna iz kupovina posetioca
+---
+ Data/{autori.txt => autori.csv}               |  0
+ Data/{izdavaci.txt => izdavaci.csv}           |  0
+ Data/{knjige.txt => knjige.csv}               |  0
+ Data/{kupovine.txt => kupovine.csv}           |  0
+ Data/{posetioci.txt => posetioci.csv}         |  0
+ README.md                                     |  2 +-
+ SajamKnjiga.CLI/Program.cs                    |  2 +-
+ SajamKnjiga.CLI/Views/AutorConsoleView.cs     | 20 +++++++-
+ SajamKnjiga.CLI/Views/ConsoleViewUtils.cs     | 18 ++++++-
+ SajamKnjiga.CLI/Views/IzdavacConsoleView.cs   |  6 +++
+ SajamKnjiga.CLI/Views/KnjigaConsoleView.cs    |  6 +++
+ SajamKnjiga.CLI/Views/KupovinaConsoleView.cs  |  3 +-
+ SajamKnjiga.CLI/Views/PosetilacConsoleView.cs |  6 +++
+ SajamKnjiga.Core/DAO/KnjigaDAO.cs             | 48 +++++++++++++++++++
+ SajamKnjiga.Core/DAO/KupovinaDAO.cs           |  3 ++
+ SajamKnjiga.Core/Models/Posetilac.cs          | 17 +++++++
+ SajamKnjiga.Core/Utils/Povezivanje.cs         |  5 ++
+ 17 files changed, 129 insertions(+), 7 deletions(-)
+ rename Data/{autori.txt => autori.csv} (100%)
+ rename Data/{izdavaci.txt => izdavaci.csv} (100%)
+ rename Data/{knjige.txt => knjige.csv} (100%)
+ rename Data/{kupovine.txt => kupovine.csv} (100%)
+ rename Data/{posetioci.txt => posetioci.csv} (100%)
+
+diff --git a/Data/autori.txt b/Data/autori.csv
+similarity index 100%
+rename from Data/autori.txt
+rename to Data/autori.csv
+diff --git a/Data/izdavaci.txt b/Data/izdavaci.csv
+similarity index 100%
+rename from Data/izdavaci.txt
+rename to Data/izdavaci.csv
+diff --git a/Data/knjige.txt b/Data/knjige.csv
+similarity index 100%
+rename from Data/knjige.txt
+rename to Data/knjige.csv
+diff --git a/Data/kupovine.txt b/Data/kupovine.csv
+similarity index 100%
+rename from Data/kupovine.txt
+rename to Data/kupovine.csv
+diff --git a/Data/posetioci.txt b/Data/posetioci.csv
+similarity index 100%
+rename from Data/posetioci.txt
+rename to Data/posetioci.csv
+diff --git a/README.md b/README.md
+index ffa30fa..32fcf0c 100644
+--- a/README.md
++++ b/README.md
+@@ -20,4 +20,4 @@ dotnet build SajamKnjiga.sln
+ dotnet run --project SajamKnjiga.CLI
+ ```
+ 
+-Podaci se cuvaju u folderu `Data` u korenu repozitorijuma, jedan `.txt` fajl po entitetu (vrednosti su odvojene sa `|`). Ako fajl ne postoji, napravi se prazan pri prvom pokretanju.
++Podaci se cuvaju u folderu `Data` u korenu repozitorijuma, jedan `.csv` fajl po entitetu (vrednosti su odvojene sa `|`). Ako fajl ne postoji, napravi se prazan pri prvom pokretanju.
+diff --git a/SajamKnjiga.CLI/Program.cs b/SajamKnjiga.CLI/Program.cs
+index 58cea89..1c846b1 100644
+--- a/SajamKnjiga.CLI/Program.cs
++++ b/SajamKnjiga.CLI/Program.cs
+@@ -23,7 +23,7 @@ namespace SajamKnjiga.CLI
+ 
+             Povezivanje.Povezi(posetilacDao, autorDao, knjigaDao, izdavacDao, kupovinaDao);
+             PosetilacConsoleView posetilacView = new PosetilacConsoleView(posetilacDao);
+-            AutorConsoleView autorView = new AutorConsoleView(autorDao);
++            AutorConsoleView autorView = new AutorConsoleView(autorDao, izdavacDao);
+             KnjigaConsoleView knjigaView = new KnjigaConsoleView(knjigaDao, autorDao, izdavacDao);
+             KupovinaConsoleView kupovinaView = new KupovinaConsoleView(kupovinaDao, posetilacDao, knjigaDao);
+             IzdavacConsoleView izdavacView = new IzdavacConsoleView(izdavacDao, autorDao);
+diff --git a/SajamKnjiga.CLI/Views/AutorConsoleView.cs b/SajamKnjiga.CLI/Views/AutorConsoleView.cs
+index 88e48f8..d1f72ae 100644
+--- a/SajamKnjiga.CLI/Views/AutorConsoleView.cs
++++ b/SajamKnjiga.CLI/Views/AutorConsoleView.cs
+@@ -9,10 +9,12 @@ namespace SajamKnjiga.CLI.Views
+     public class AutorConsoleView
+     {
+          private readonly AutorDAO _autorDao;
++        private readonly IzdavacDAO _izdavacDao;
+ 
+-        public AutorConsoleView(AutorDAO autorDao)
++        public AutorConsoleView(AutorDAO autorDao, IzdavacDAO izdavacDao)
+         {
+             _autorDao = autorDao;
++            _izdavacDao = izdavacDao;
+         }
+ 
+         public void RunMenu()
+@@ -97,6 +99,17 @@ namespace SajamKnjiga.CLI.Views
+         private void ObrisiAutora()
+         {
+             string brojLk = ConsoleViewUtils.SafeInputText("Broj licne karte autora za brisanje: ");
++            Autor autor = _autorDao.GetAutorByBrojLicneKarte(brojLk);
++            if (autor != null && autor.Knjige.Count > 0)
++            {
++                Console.WriteLine("Autor ima knjige, prvo obrisite ili izmenite te knjige.");
++                return;
++            }
++            if (autor != null && _izdavacDao.GetAllIzdavaci().Exists(i => i.SefIzdavaca == autor))
++            {
++                Console.WriteLine("Autor je sef izdavaca, prvo promenite sefa.");
++                return;
++            }
+             Autor obrisan = _autorDao.RemoveAutor(brojLk);
+             if (obrisan == null)
+             {
+@@ -110,6 +123,11 @@ namespace SajamKnjiga.CLI.Views
+         {
+             Autor autor = new Autor();
+             autor.BrojLicneKarte = ConsoleViewUtils.SafeInputText("Broj licne karte: ");
++            // zarez odvaja autore u knjige.csv, pa ne sme biti u licnoj karti
++            while (autor.BrojLicneKarte.Contains(','))
++            {
++                autor.BrojLicneKarte = ConsoleViewUtils.SafeInputText("Licna karta ne sme sadrzati zarez, unesite ponovo: ");
++            }
+             UnesiPodatke(autor);
+             return autor;
+         }
+diff --git a/SajamKnjiga.CLI/Views/ConsoleViewUtils.cs b/SajamKnjiga.CLI/Views/ConsoleViewUtils.cs
+index b6d7159..b0cee11 100644
+--- a/SajamKnjiga.CLI/Views/ConsoleViewUtils.cs
++++ b/SajamKnjiga.CLI/Views/ConsoleViewUtils.cs
+@@ -10,9 +10,23 @@ namespace SajamKnjiga.CLI.Views
+         {
+             Console.Write(poruka);
+             string unos = Console.ReadLine() ?? string.Empty;
+-            while (unos.Trim() == "")
++            // '|' je separator u fajlu, pa ne sme da se pojavi u unosu
++            while (unos.Trim() == "" || unos.Contains('|'))
+             {
+-                Console.Write("Polje ne sme biti prazno, unesite ponovo: ");
++                Console.Write("Polje ne sme biti prazno niti sadrzati znak '|', unesite ponovo: ");
++                unos = Console.ReadLine() ?? string.Empty;
++            }
++            return unos.Trim();
++        }
++
++        // za polja koja smeju biti prazna (npr. komentar)
++        public static string SafeInputOptionalText(string poruka)
++        {
++            Console.Write(poruka);
++            string unos = Console.ReadLine() ?? string.Empty;
++            while (unos.Contains('|'))
++            {
++                Console.Write("Unos ne sme sadrzati znak '|', unesite ponovo: ");
+                 unos = Console.ReadLine() ?? string.Empty;
+             }
+             return unos.Trim();
+diff --git a/SajamKnjiga.CLI/Views/IzdavacConsoleView.cs b/SajamKnjiga.CLI/Views/IzdavacConsoleView.cs
+index 2ea3cca..8121bbe 100644
+--- a/SajamKnjiga.CLI/Views/IzdavacConsoleView.cs
++++ b/SajamKnjiga.CLI/Views/IzdavacConsoleView.cs
+@@ -122,6 +122,12 @@ namespace SajamKnjiga.CLI.Views
+          private void ObrisiIzdavaca()
+         {
+             string sifra = ConsoleViewUtils.SafeInputText("Sifra izdavaca za brisanje: ");
++            Izdavac izdavac = _izdavacDao.GetIzdavacBySifra(sifra);
++            if (izdavac != null && izdavac.Knjige.Count > 0)
++            {
++                Console.WriteLine("Izdavac ima knjige, prvo obrisite ili izmenite te knjige.");
++                return;
++            }
+             Izdavac obrisan = _izdavacDao.RemoveIzdavac(sifra);
+             if (obrisan == null)
+             {
+diff --git a/SajamKnjiga.CLI/Views/KnjigaConsoleView.cs b/SajamKnjiga.CLI/Views/KnjigaConsoleView.cs
+index e6f878f..d747bfe 100644
+--- a/SajamKnjiga.CLI/Views/KnjigaConsoleView.cs
++++ b/SajamKnjiga.CLI/Views/KnjigaConsoleView.cs
+@@ -130,6 +130,12 @@ namespace SajamKnjiga.CLI.Views
+         private void ObrisiKnjigu()
+         {
+             string isbn = ConsoleViewUtils.SafeInputText("ISBN knjige za brisanje: ");
++            Knjiga knjiga = _knjigaDao.GetKnjigaByISBN(isbn);
++            if (knjiga != null && knjiga.Kupci.Count > 0)
++            {
++                Console.WriteLine("Knjiga ima kupovine, prvo obrisite njene kupovine.");
++                return;
++            }
+             Knjiga obrisana = _knjigaDao.RemoveKnjiga(isbn);
+             if (obrisana == null)
+             {
+diff --git a/SajamKnjiga.CLI/Views/KupovinaConsoleView.cs b/SajamKnjiga.CLI/Views/KupovinaConsoleView.cs
+index 6c7217f..fa2753e 100644
+--- a/SajamKnjiga.CLI/Views/KupovinaConsoleView.cs
++++ b/SajamKnjiga.CLI/Views/KupovinaConsoleView.cs
+@@ -146,8 +146,7 @@ namespace SajamKnjiga.CLI.Views
+                 ocena = ConsoleViewUtils.SafeInputInt("Ocena mora biti od 1 do 5: ");
+             }
+             kupovina.Ocena = ocena;
+-            Console.Write("Komentar: ");
+-            kupovina.Komentar = Console.ReadLine() ?? string.Empty;
++            kupovina.Komentar = ConsoleViewUtils.SafeInputOptionalText("Komentar: ");
+         }
+ 
+         public void PrintKupovine(List<Kupovina> kupovine)
+diff --git a/SajamKnjiga.CLI/Views/PosetilacConsoleView.cs b/SajamKnjiga.CLI/Views/PosetilacConsoleView.cs
+index f88752f..61d961d 100644
+--- a/SajamKnjiga.CLI/Views/PosetilacConsoleView.cs
++++ b/SajamKnjiga.CLI/Views/PosetilacConsoleView.cs
+@@ -98,6 +98,12 @@ namespace SajamKnjiga.CLI.Views
+          private void ObrisiPosetioca()
+         {
+             string brojKarte = ConsoleViewUtils.SafeInputText("Broj clanske karte posetioca za brisanje: ");
++            Posetilac posetilac = _posetilacDao.GetPosetilacByBrojClanskeKarte(brojKarte);
++            if (posetilac != null && posetilac.ListaKupovina.Count > 0)
++            {
++                Console.WriteLine("Posetilac ima kupovine, prvo obrisite njegove kupovine.");
++                return;
++            }
+             Posetilac obrisan = _posetilacDao.RemovePosetilac(brojKarte);
+             if (obrisan == null)
+             {
+diff --git a/SajamKnjiga.Core/DAO/KnjigaDAO.cs b/SajamKnjiga.Core/DAO/KnjigaDAO.cs
+index 24ff374..b0c8a55 100644
+--- a/SajamKnjiga.Core/DAO/KnjigaDAO.cs
++++ b/SajamKnjiga.Core/DAO/KnjigaDAO.cs
+@@ -36,6 +36,7 @@ namespace SajamKnjiga.Core.DAO
+             }
+ 
+             _knjige.Add(knjiga);
++            PoveziVeze(knjiga);
+             _storage.Save(_knjige);
+             return knjiga;
+         }
+@@ -48,6 +49,8 @@ namespace SajamKnjiga.Core.DAO
+                 return null;
+             }
+ 
++            // skidamo knjigu sa starih autora/izdavaca pa je kacimo na nove
++            RaskiniVeze(stara);
+             stara.Naziv = knjiga.Naziv;
+             stara.Zanr = knjiga.Zanr;
+             stara.GodinaIzdanja = knjiga.GodinaIzdanja;
+@@ -55,6 +58,7 @@ namespace SajamKnjiga.Core.DAO
+             stara.BrojStrana = knjiga.BrojStrana;
+             stara.Autori = knjiga.Autori;
+             stara.Izdavac = knjiga.Izdavac;
++            PoveziVeze(stara);
+             _storage.Save(_knjige);
+             return stara;
+         }
+@@ -68,8 +72,52 @@ namespace SajamKnjiga.Core.DAO
+             }
+ 
+             _knjige.Remove(knjiga);
++            RaskiniVeze(knjiga);
+             _storage.Save(_knjige);
+             return knjiga;
+         }
++
++        // isto sto radi Povezivanje posle ucitavanja, samo za jednu knjigu
++        private void PoveziVeze(Knjiga knjiga)
++        {
++            foreach (Autor autor in knjiga.Autori)
++            {
++                autor.Knjige.Add(knjiga);
++            }
++
++            if (knjiga.Izdavac != null)
++            {
++                knjiga.Izdavac.Knjige.Add(knjiga);
++                foreach (Autor autor in knjiga.Autori)
++                {
++                    if (!knjiga.Izdavac.Autori.Contains(autor))
++                    {
++                        knjiga.Izdavac.Autori.Add(autor);
++                    }
++                }
++            }
++        }
++
++        private void RaskiniVeze(Knjiga knjiga)
++        {
++            foreach (Autor autor in knjiga.Autori)
++            {
++                autor.Knjige.Remove(knjiga);
++            }
++
++            if (knjiga.Izdavac != null)
++            {
++                knjiga.Izdavac.Knjige.Remove(knjiga);
++                // autor ostaje kod izdavaca samo ako ima jos neku knjigu kod njega
++                foreach (Autor autor in knjiga.Autori)
++                {
++                    bool imaJos = knjiga.Izdavac.Knjige.Exists(k => k.Autori.Contains(autor));
++                    if (!imaJos)
++                    {
++                        knjiga.Izdavac.Autori.Remove(autor);
++                    }
++                }
++            }
++        }
+     }
+ }
+diff --git a/SajamKnjiga.Core/DAO/KupovinaDAO.cs b/SajamKnjiga.Core/DAO/KupovinaDAO.cs
+index fe8fa1c..4b9abcf 100644
+--- a/SajamKnjiga.Core/DAO/KupovinaDAO.cs
++++ b/SajamKnjiga.Core/DAO/KupovinaDAO.cs
+@@ -38,6 +38,7 @@ namespace SajamKnjiga.Core.DAO
+             _kupovine.Add(kupovina);
+             kupovina.Posetilac.ListaKupovina.Add(kupovina);
+             kupovina.Knjiga.Kupci.Add(kupovina.Posetilac);
++            kupovina.Posetilac.IzracunajProsecnuOcenu();
+             _storage.Save(_kupovine);
+             return kupovina;
+         }
+@@ -53,6 +54,7 @@ namespace SajamKnjiga.Core.DAO
+             stara.DatumKupovine = kupovina.DatumKupovine;
+             stara.Ocena = kupovina.Ocena;
+             stara.Komentar = kupovina.Komentar;
++            stara.Posetilac.IzracunajProsecnuOcenu();
+ 
+             _storage.Save(_kupovine);
+             return stara;
+@@ -69,6 +71,7 @@ namespace SajamKnjiga.Core.DAO
+             _kupovine.Remove(kupovina);
+             kupovina.Posetilac.ListaKupovina.Remove(kupovina);
+             kupovina.Knjiga.Kupci.Remove(kupovina.Posetilac);
++            kupovina.Posetilac.IzracunajProsecnuOcenu();
+             _storage.Save(_kupovine);
+             return kupovina;
+         }
+diff --git a/SajamKnjiga.Core/Models/Posetilac.cs b/SajamKnjiga.Core/Models/Posetilac.cs
+index 7f2421b..244df03 100644
+--- a/SajamKnjiga.Core/Models/Posetilac.cs
++++ b/SajamKnjiga.Core/Models/Posetilac.cs
+@@ -69,6 +69,23 @@ namespace SajamKnjiga.Core.Models
+             Status = (Status)Enum.Parse(typeof(Status), values[11]);
+             ProsecnaOcenaRecenzija = double.Parse(values[12], CultureInfo.InvariantCulture);
+         }
++        // prosek ocena iz svih kupovina posetioca
++        public void IzracunajProsecnuOcenu()
++        {
++            if (ListaKupovina.Count == 0)
++            {
++                ProsecnaOcenaRecenzija = 0;
++                return;
++            }
++
++            int zbir = 0;
++            foreach (Kupovina kupovina in ListaKupovina)
++            {
++                zbir += kupovina.Ocena;
++            }
++            ProsecnaOcenaRecenzija = (double)zbir / ListaKupovina.Count;
++        }
++
+         public override string ToString()
+         {
+             return $"| Ime: {Ime} | Prezime: {Prezime} | Datum rodjenja: {DatumRodjenja:dd.MM.yyyy.} | Adresa: {Adresa} | Telefon: {KontaktTelefon} | Email: {Email} | Clanska karta: {BrojClanskeKarte} | Godina clanstva: {TrenutnaGodinaClanstva} | Status: {Status} | Prosek recenzija: {ProsecnaOcenaRecenzija:F2} | Kupovine: {ListaKupovina.Count} | Zelje: {ListaZelja.Count} |";
+diff --git a/SajamKnjiga.Core/Utils/Povezivanje.cs b/SajamKnjiga.Core/Utils/Povezivanje.cs
+index 680bc91..ce5e326 100644
+--- a/SajamKnjiga.Core/Utils/Povezivanje.cs
++++ b/SajamKnjiga.Core/Utils/Povezivanje.cs
+@@ -65,6 +65,11 @@ namespace SajamKnjiga.Core.Utils
+                 posetilac.ListaKupovina.Add(kupovina);
+                 knjiga.Kupci.Add(posetilac);
+             }
++
++            foreach (Posetilac posetilac in posetilacDao.GetAllPosetioci())
++            {
++                posetilac.IzracunajProsecnuOcenu();
++            }
+         }
+     }
+ }
+\ No newline at end of file
+-- 
+2.43.0
+

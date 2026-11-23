@@ -13,7 +13,6 @@ namespace SajamKnjiga.Core.Utils
 
         public Storage(string fileName)
         {
-            // iz bin/Debug/net8.0 idemo 4 foldera gore do korena repoa, tu je folder Data
             string folder = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Data");
             Directory.CreateDirectory(folder);
 

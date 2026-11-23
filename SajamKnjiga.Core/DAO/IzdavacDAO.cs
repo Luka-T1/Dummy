@@ -13,7 +13,7 @@ namespace SajamKnjiga.Core.DAO
 
         public IzdavacDAO()
         {
-            _storage = new Storage<Izdavac>("izdavaci.txt");
+            _storage = new Storage<Izdavac>("izdavaci.csv");
             _izdavaci = _storage.Load();
         }
 

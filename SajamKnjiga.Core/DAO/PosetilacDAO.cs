@@ -13,7 +13,7 @@ namespace SajamKnjiga.Core.DAO
 
         public PosetilacDAO()
         {
-            _storage = new Storage<Posetilac>("posetioci.txt");
+            _storage = new Storage<Posetilac>("posetioci.csv");
             _posetioci = _storage.Load();
         }
 
